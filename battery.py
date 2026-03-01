@@ -11,7 +11,7 @@ while True:
         notification.notify(
             title="🔋 Battery Full",
             message="Battery is fully charged. Please unplug the charger!",
-            timeout=10
+            timeout=5
         )
         voices = speak.getProperty('voices')
         # engine.setProperty('voice', voices[0].id)  #changing index, changes voices. o for male
