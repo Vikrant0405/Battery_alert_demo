@@ -4,8 +4,13 @@ from plyer import notification
 import  pyttsx3
 speak = pyttsx3.init()
 
+# Track previous charger state to detect changes
+prev_power_plugged = None
+
 while True:
     battery = psutil.sensors_battery()
+    
+    # High battery alert (>= 80% and charging)
     if battery.percent >= 80 and battery.power_plugged:
 
         notification.notify(
@@ -27,9 +32,53 @@ while True:
         speak.say("Battery is fully charged. Please unplug the charger!")
         speak.runAndWait()
 
-        time.sleep(1)  # check every 1 minute
+        time.sleep(60)  # check every 1 minute
+    
+    # Low battery alert (< 20%) - alerts when charger was connected but now unplugged
+    elif battery.percent < 20:
+        
+        # Check if charger was just unplugged (state changed from True to False)
+        if prev_power_plugged == True and battery.power_plugged == False:
+            # Charger was unplugged - stop the message, no alert needed now
+            print("Charger unplugged - stopping alert")
+            prev_power_plugged = battery.power_plugged
+            time.sleep(1)  # check every 1 second
+        elif battery.power_plugged:
+            # Charger is connected but battery is low
+            notification.notify(
+                title="🔋 Low Battery",
+                message=f"Battery is at {battery.percent}%. Please plug in the charger!",
+                timeout=5
+            )
+            voices = speak.getProperty('voices')
+            speak.setProperty('voice', voices[1].id)
+            speak.setProperty('volume', 1.0)
+            speak.setProperty('rate', 160)
+            speak.say(f"Battery is low at {battery.percent} percent. Please plug in the charger, it is connected!")
+            speak.runAndWait()
+            
+            prev_power_plugged = battery.power_plugged
+            time.sleep(60)  # check every 1 minute
+        else:
+            # Charger is not connected and battery is low
+            notification.notify(
+                title="🔋 Low Battery",
+                message=f"Battery is at {battery.percent}%. Please connect the charger!",
+                timeout=5
+            )
+            voices = speak.getProperty('voices')
+            speak.setProperty('voice', voices[1].id)
+            speak.setProperty('volume', 1.0)
+            speak.setProperty('rate', 160)
+            speak.say(f"Battery is low at {battery.percent} percent. Please connect the charger!")
+            speak.runAndWait()
+            
+            prev_power_plugged = battery.power_plugged
+            time.sleep(60)  # check every 1 minute
     else:
-        time.sleep(1)  # check every 1 minute
+        # Update previous state when battery is normal
+        prev_power_plugged = battery.power_plugged
+        time.sleep(1)  # check every 1 second
 
 
 
